@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "trustedClick": true
+  },
+  "flow.approve": {
+    "textExact": [
+      "Approve",
+      "Phê duyệt",
+      "Chấp thuận"
+    ]
+  },
+  "flow.menuDownload": {
+    "role": "menuitem",
+    "text": [
+      "Download",
+      "Tải xuống"
+    ]
+  },
+  "flow.newProject": [
+    {
+      "role": "button",
+      "text": [
+        "New project",
+        "Dự án mới"
+      ]
+    },
+    {
+      "css": "button.new-project-button"
+    }
+  ],
+  "flow.pendingTile": "flow-pending-tile",
+  "flow.progress": "[role=\"progressbar\"], flow-pending-tile .loading-percentage",
+  "flow.prompt": [
+    {
+      "role": "textbox",
+      "aria": [
+        "Bạn muốn tạo gì",
+        "Bạn muốn tạo nội dung gì",
+        "What do you want to create"
+      ]
+    },
+    {
+      "css": "[contenteditable=\"true\"]"
+    }
+  ],
+  "flow.quality720": {
+    "role": "menuitem",
+    "text": "720p"
+  },
+  "flow.submit": {
+    "aria": [
+      "Bắt đầu tạo",
+      "Start generation",
+      "Create"
+    ],
+    "css": "button"
+  },
+  "flow.tile": "flow-video-tile",
+  "flow.videoTile": "flow-video-tile video[src], flow-video-tile img.thumbnail"
+}

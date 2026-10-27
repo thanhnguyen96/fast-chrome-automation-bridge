@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Fast Automation Bridge",
+  "version": "2.5.0",
+  "description": "Site-agnostic local automation bridge. Google Flow is a pluggable site module.",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "activeTab",
+    "downloads",
+    "storage",
+    "alarms",
+    "debugger",
+    "tabGroups"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/index.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/core.js", "content/router.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://flow.google.com/*",
+        "https://labs.google.com/*",
+        "https://flow.google/*",
+        "https://labs.google/*"
+      ],
+      "js": ["sites/google_flow.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

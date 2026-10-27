@@ -1,0 +1,15 @@
+# Generated media
+*.mp4
+*.zip
+videos/
+
+# Screenshots / traces
+*.jpg
+*.png
+traces/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
+node_modules/

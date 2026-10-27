@@ -1,0 +1,45 @@
+{
+  "gemini.codeBlock": "model-response code-block",
+  "gemini.modelArgon": {
+    "css": "span.label",
+    "text": "Argon"
+  },
+  "gemini.modelPicker": {
+    "css": "button",
+    "aria": [
+      "Mở công cụ chọn chế độ",
+      "Open mode picker"
+    ]
+  },
+  "gemini.prompt": [
+    {
+      "role": "textbox",
+      "aria": [
+        "Nhập câu lệnh",
+        "Enter a prompt"
+      ]
+    },
+    {
+      "css": "rich-textarea [contenteditable=\"true\"]"
+    }
+  ],
+  "gemini.response": {
+    "css": "model-response",
+    "nth": -1
+  },
+  "gemini.send": {
+    "css": "button",
+    "aria": [
+      "Gửi tin nhắn",
+      "Send message"
+    ]
+  },
+  "gemini.stop": {
+    "css": "button",
+    "aria": [
+      "Ngừng tạo câu trả lời",
+      "Dừng tạo câu trả lời",
+      "Stop response"
+    ]
+  }
+}

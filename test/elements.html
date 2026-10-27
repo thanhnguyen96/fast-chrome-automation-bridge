@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>element api test</title>
+<style>
+  body { font-family: sans-serif; }
+  .hidden { display: none; }
+  #late { margin-top: 8px; }
+</style>
+</head>
+<body>
+  <button id="go" class="go">Go</button>
+  <button id="hide">Hide</button>
+  <button id="a" disabled>First</button>
+  <button id="b">Second</button>
+  <button id="c">Third</button>
+  <input id="box" placeholder="type here">
+  <div id="label">waiting</div>
+  <div id="panel"><span id="inner">inner text</span></div>
+  <p id="status"></p>
+  <div id="late"></div>
+
+  <script>
+    // Appears 1s after load. waitAppear / waitDisappear target.
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.id = 'soon';
+      el.textContent = 'appeared';
+      document.body.appendChild(el);
+    }, 1000);
+
+    document.getElementById('go').addEventListener('click', () => {
+      document.getElementById('status').textContent = 'clicked';
+      const born = document.createElement('span');
+      born.className = 'chip';
+      born.textContent = 'new chip';
+      document.getElementById('late').appendChild(born);
+    });
+
+    // A chip that already exists, so waitNew must ignore it.
+    const old = document.createElement('span');
+    old.className = 'chip';
+    old.textContent = 'old chip';
+    document.getElementById('late').appendChild(old);
+
+    document.getElementById('hide').addEventListener('click', () => {
+      const soon = document.getElementById('soon');
+      if (soon) soon.classList.add('hidden');
+    });
+
+    document.getElementById('box').addEventListener('input', (e) => {
+      document.getElementById('label').textContent = e.target.value;
+    });
+  </script>
+</body>
+</html>
