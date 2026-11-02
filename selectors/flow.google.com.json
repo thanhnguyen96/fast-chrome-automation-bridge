@@ -73,6 +73,10 @@
       "Start new session"
     ]
   },
+  "flow.chatSettings": {
+    "css": "button",
+    "text": "tune"
+  },
   "flow.menuDownload": {
     "role": "menuitem",
     "text": [
@@ -91,6 +95,13 @@
     "textExact": [
       "Cảnh",
       "Scenes"
+    ],
+    "css": ".mdc-list-item__primary-text"
+  },
+  "flow.navVideos": {
+    "textExact": [
+      "Video",
+      "Videos"
     ],
     "css": ".mdc-list-item__primary-text"
   },
