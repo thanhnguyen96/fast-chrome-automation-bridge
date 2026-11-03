@@ -23,6 +23,10 @@ node run_workflow.js workflow flow.newProject --tab <TAB>
 - Note the `tabId`; every later command uses `--tab <TAB>`.
 - Screenshot timeout or "Detached while handling command": `node run_workflow.js call agent.keepAlive '{"target":{"tabId":<TAB>}}'`, then retry.
 - Ask the user first: number of scenes, style, dialogue language. Default video model is **Omni** (cheap, 10-second clips).
+- **Never invent a story the user named.** If they name an existing story/tale/book, find the real text first (web search, or the link they give), then adapt it faithfully: same characters, same events, same order. Invent only when they ask for an original story. Check the plan against the source before creating characters (credits and time are spent on them).
+- **Debugger blocked** (`debugger attach failed: Cannot access a chrome-extension:// URL of different extension`, code `DEBUGGER_FAILED` / `TRUSTED_INPUT_FAILED`): another Chrome extension in the same profile (password managers, VPN, ad blockers, other agent extensions) is attached to or injected into the tab. Typing into the character editor and clicking the chat send button both need the debugger, so everything stalls. Test on a plain page first (`tabs.open https://example.com`, then `agent.keepAlive`): if that works, the bridge is fine and a page-level extension is the cause. Ask the user to disable the other extensions in the profile the bridge runs in (check `Secure Preferences` of each profile to find which one), reload the tab, retry. Do not rewrite scripts to dodge it: `trusted:false` clicks cannot press the chat send button.
+- `chrome://` pages cannot be read or driven by the bridge; read extension settings from the profile folder instead.
+- Flow's UI language follows the account and may be English: scripts and selectors must accept both (`Select a voice`, `Add ingredients to the prompt box`, `Approve`).
 
 ## 1. Write the script first
 
@@ -132,8 +136,13 @@ Per scene: wait until the agent is idle, attach characters via the chat "+" butt
 - The script prints `!!` and stops when no approve chip shows; read the chat (`el text body`) to see what the agent asked.
 - The agent may ask back (e.g. pick 3 characters). Then stop, fix the JSON, resend that scene.
 
+- Send button: `@flow.submit` matches 2 buttons and the first is not the chat send button. `run_batch.sh` clicks the **last** match and re-clicks once if the prompt box is still not empty. When sending by hand, use `{"css":"button","aria":["Bắt đầu tạo","Start generation","Create"],"nth":-1}`.
+- A message that was not sent stays in the prompt box and no approve chip appears. The script reports `!! no approve chip`; check `el text @flow.prompt` before blaming the agent.
+- Send the next batch only after the previous one finished (all tiles done, `@flow.progress` = 0) and the plan text of **this** batch shows the expected video count and cost (15 credits per scene).
+
 ### Waiting for clips
 
+- **Do not poll by hand and do not wait for the user to ask.** Run the long script in the background (`run_in_background`) and attach a **Monitor** to its output file with an until-loop that exits on `== done`, `!!`, or an error line, so the session is woken exactly when something happens. A "no output yet" check after the user asks "how is it going" means the wait was set up wrong.
 - **Go to the Video tab** (`@flow.navVideos`). Tiles only exist in the DOM on the Video tab: on Characters/Scenes, counting `flow-video-tile` stays 0 even when clips are done. Clips shown in the chat are only thumbnails.
 - Done when, on the Video tab, the `flow-video-tile` count reaches the scene count and `@flow.progress` is 0. Tiles still showing `%` or "Đang trong hàng đợi" (queued) are not done.
 
