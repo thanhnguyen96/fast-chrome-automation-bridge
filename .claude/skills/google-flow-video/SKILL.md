@@ -142,7 +142,16 @@ Per scene: wait until the agent is idle, attach characters via the chat "+" butt
 
 ### Waiting for clips
 
-- **Do not poll by hand and do not wait for the user to ask.** Run the long script in the background (`run_in_background`) and attach a **Monitor** to its output file with an until-loop that exits on `== done`, `!!`, or an error line, so the session is woken exactly when something happens. A "no output yet" check after the user asks "how is it going" means the wait was set up wrong.
+- **Do not poll by hand and do not wait for the user to ask.** Run the long script in the background with output to a log file (`nohup sh run_batch.sh ... > run.log 2>&1 &`) and attach a **Monitor** to that log. A "no output yet" check after the user asks "how is it going" means the wait was set up wrong.
+  - The monitor must **end by itself**. Do not use `tail -f`: it stays armed until timeout after the batch finished. Use a loop that emits only state changes and exits on a terminal line:
+    ```sh
+    seen=0; while true; do
+      n=$(wc -l < run.log); [ "$n" -gt "$seen" ] && sed -n "$((seen+1)),${n}p" run.log | grep -E "^== (sent|approved|done)|^!!|costing"; seen=$n
+      grep -qE "^== done|^!!" run.log && break; sleep 5; done
+    ```
+  - Emit only what you would act on (sent, plan cost, approved, done, any `!!`). Do not emit the per-poll `tiles=` lines: each one becomes a notification.
+  - Cover failure: any `!!` line or a crash must end the monitor too, not only `== done`.
+  - A `== done` line is a claim, not proof. Before the next batch, check the plan line (`costing N credits`, N videos) matched the scene count and that the tile count rose by the number of scenes.
 - **Go to the Video tab** (`@flow.navVideos`). Tiles only exist in the DOM on the Video tab: on Characters/Scenes, counting `flow-video-tile` stays 0 even when clips are done. Clips shown in the chat are only thumbnails.
 - Done when, on the Video tab, the `flow-video-tile` count reaches the scene count and `@flow.progress` is 0. Tiles still showing `%` or "Đang trong hàng đợi" (queued) are not done.
 
