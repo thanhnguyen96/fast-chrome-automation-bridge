@@ -137,3 +137,17 @@ export async function captureScreenshot(tabId, { format = 'jpeg', quality = 80 }
     return { dataUrl: `data:image/${format};base64,${res.data}`, format };
   });
 }
+
+// Evaluate an expression in the page main world (top frame). awaitPromise so async code works.
+export async function evaluate(tabId, expression, timeoutMs = 30000) {
+  return withDebugger(tabId, async (send) => {
+    const r = await send('Runtime.evaluate', {
+      expression, awaitPromise: true, returnByValue: true, userGesture: true, timeout: timeoutMs
+    });
+    if (r.exceptionDetails) {
+      const d = r.exceptionDetails;
+      throw new BridgeError(`eval failed: ${(d.exception && d.exception.description) || d.text}`, 'EVAL_FAILED');
+    }
+    return { value: r.result ? r.result.value : undefined };
+  });
+}

@@ -5,7 +5,7 @@ import { register } from './commands.js';
 import { resolveTab, waitForTabComplete, tabInfo, BridgeError, openAgentTab, agentWindowId } from './tabs.js';
 import { ensureInjected } from './inject.js';
 import { registerDownloadCommands } from './downloads.js';
-import { trustedClick, trustedInsertText, trustedKey, trustedShortcut, trustedMove, captureScreenshot, detachDebugger, keepAlive } from './input.js';
+import { trustedClick, trustedInsertText, trustedKey, trustedShortcut, trustedMove, captureScreenshot, detachDebugger, keepAlive, evaluate } from './input.js';
 import { getSelectors, saveSelectors } from './selectors.js';
 
 const CONTENT_ACTIONS = {
@@ -321,6 +321,13 @@ register('input.shortcut', async (payload) => {
 });
 
 registerDownloadCommands(register);
+
+// Run JS in the page main world via CDP. payload: { expression, timeoutMs }.
+register('page.eval', async (payload) => {
+  if (!payload.expression) throw new BridgeError('expression required', 'BAD_REQUEST');
+  const tab = await resolveTab(payload.target || {});
+  return evaluate(tab.id, String(payload.expression), payload.timeoutMs || 30000);
+});
 
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
   if (info.status !== 'complete') return;
