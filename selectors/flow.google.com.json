@@ -9,12 +9,102 @@
       "Chấp thuận"
     ]
   },
+  "flow.back": {
+    "css": "button",
+    "aria": [
+      "Quay lại",
+      "Back"
+    ]
+  },
+  "flow.charDone": {
+    "css": "button",
+    "textExact": [
+      "Xong",
+      "Done"
+    ]
+  },
+  "flow.charImageReady": {
+    "css": "button",
+    "aria": [
+      "Tải hình ảnh xuống",
+      "Download image"
+    ]
+  },
+  "flow.charInfo": {
+    "css": "textarea",
+    "placeholder": [
+      "Mô tả tính cách",
+      "Describe"
+    ]
+  },
+  "flow.charName": {
+    "css": "input",
+    "aria": [
+      "Tên nhân vật",
+      "Character name"
+    ]
+  },
+  "flow.charPrompt": {
+    "role": "textbox",
+    "aria": [
+      "Mô tả nhân vật",
+      "Describe your character"
+    ]
+  },
+  "flow.charSubmit": {
+    "css": "button",
+    "aria": [
+      "Bắt đầu tạo",
+      "Start generation"
+    ]
+  },
+  "flow.charVoice": {
+    "css": "button",
+    "text": [
+      "Chọn giọng nói",
+      "Choose voice",
+      "Select voice",
+      "Select a voice"
+    ]
+  },
+  "flow.chatNew": {
+    "css": "button",
+    "aria": [
+      "Bắt đầu phiên mới",
+      "Start new session"
+    ]
+  },
+  "flow.chatSettings": {
+    "css": "button",
+    "text": "tune"
+  },
   "flow.menuDownload": {
     "role": "menuitem",
     "text": [
       "Download",
       "Tải xuống"
     ]
+  },
+  "flow.navCharacters": {
+    "textExact": [
+      "Nhân vật",
+      "Characters"
+    ],
+    "css": ".mdc-list-item__primary-text"
+  },
+  "flow.navScenes": {
+    "textExact": [
+      "Cảnh",
+      "Scenes"
+    ],
+    "css": ".mdc-list-item__primary-text"
+  },
+  "flow.navVideos": {
+    "textExact": [
+      "Video",
+      "Videos"
+    ],
+    "css": ".mdc-list-item__primary-text"
   },
   "flow.newProject": [
     {
@@ -56,5 +146,16 @@
     "css": "button"
   },
   "flow.tile": "flow-video-tile",
-  "flow.videoTile": "flow-video-tile video[src], flow-video-tile img.thumbnail"
+  "flow.videoTile": "flow-video-tile video[src], flow-video-tile img.thumbnail",
+  "flow.voiceAdd": {
+    "css": "[role=dialog] button",
+    "textExact": [
+      "Thêm vào nhân vật",
+      "Add to character"
+    ]
+  },
+  "flow.voiceItem": {
+    "css": "[role=dialog] button",
+    "text": "voice_selection"
+  }
 }

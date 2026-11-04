@@ -5,7 +5,7 @@ import { register } from './commands.js';
 import { resolveTab, waitForTabComplete, tabInfo, BridgeError, openAgentTab, agentWindowId } from './tabs.js';
 import { ensureInjected } from './inject.js';
 import { registerDownloadCommands } from './downloads.js';
-import { trustedClick, trustedInsertText, trustedKey, trustedMove, captureScreenshot, detachDebugger } from './input.js';
+import { trustedClick, trustedInsertText, trustedKey, trustedShortcut, trustedMove, captureScreenshot, detachDebugger, keepAlive, evaluate } from './input.js';
 import { getSelectors, saveSelectors } from './selectors.js';
 
 const CONTENT_ACTIONS = {
@@ -94,6 +94,10 @@ register('tabs.open', async (payload) => {
   if (payload.wait !== false && payload.url) {
     await waitForTabComplete(tab.id, payload.timeoutMs || 30000, { urlIncludes: payload.url });
   }
+  // Agent tabs run unattended: keep them unfrozen from the start (opt out with keepAlive:false).
+  if (!payload.foreground && payload.keepAlive !== false) {
+    try { await keepAlive(tab.id); } catch (_) {}
+  }
   const fresh = await chrome.tabs.get(tab.id);
   return { tabId: fresh.id, url: fresh.url, windowId: fresh.windowId, agent: !payload.foreground };
 });
@@ -143,13 +147,21 @@ register('tabs.navigate', async (payload) => {
   return { tabId: done.id, url: done.url };
 });
 
+// Activates the tab inside its own window only. Raising the window is opt-in (focus:true).
 register('tabs.activate', async (payload) => {
   const tab = await resolveTab(payload.target || {});
   await chrome.tabs.update(tab.id, { active: true });
-  if (tab.windowId != null) {
+  if (payload.focus === true && tab.windowId != null) {
     try { await chrome.windows.update(tab.windowId, { focused: true }); } catch (_) {}
   }
   return tabInfo(await chrome.tabs.get(tab.id));
+});
+
+// Attach CDP so the tab keeps running at full speed in the background (no freeze, focus emulated).
+register('agent.keepAlive', async (payload) => {
+  const tab = await resolveTab(payload.target || {});
+  await keepAlive(tab.id);
+  return { tabId: tab.id, lifecycle: 'active' };
 });
 
 register('tabs.close', async (payload) => {
@@ -301,7 +313,21 @@ register('input.press', async (payload) => {
   return trustedKey(tab.id, payload.key);
 });
 
+// Page-level shortcut ("Control+A") sent to the tab as trusted CDP key events; no element focus.
+register('input.shortcut', async (payload) => {
+  if (!payload.keys) throw new BridgeError('keys required, e.g. "Control+A"', 'BAD_REQUEST');
+  const tab = await resolveTab(payload.target || {});
+  return trustedShortcut(tab.id, payload.keys);
+});
+
 registerDownloadCommands(register);
+
+// Run JS in the page main world via CDP. payload: { expression, timeoutMs }.
+register('page.eval', async (payload) => {
+  if (!payload.expression) throw new BridgeError('expression required', 'BAD_REQUEST');
+  const tab = await resolveTab(payload.target || {});
+  return evaluate(tab.id, String(payload.expression), payload.timeoutMs || 30000);
+});
 
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
   if (info.status !== 'complete') return;

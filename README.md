@@ -169,14 +169,23 @@ A locator is CSS, a JSON object, or a `text=` / `aria=` / `role=` prefix. The CL
 | --- | --- |
 | Extension | `ext.ping`, `ext.reload` |
 | Tabs | `tabs.list`, `tabs.open`, `tabs.adopt`, `tabs.navigate`, `tabs.activate`, `tabs.close`, `tabs.reload` |
-| Agent | `agent.window`, `agent.release` |
-| Page | `page.screenshot`, `downloads.wait` |
-| Trusted input | `input.click`, `input.type`, `input.press` |
+| Agent | `agent.window`, `agent.release`, `agent.keepAlive` |
+| Page | `page.screenshot`, `page.eval`, `downloads.wait` |
+| Trusted input | `input.click`, `input.type`, `input.press`, `input.shortcut` |
 | DOM | `dom.query`, `dom.read`, `dom.exists`, `dom.waitFor`, `dom.click`, `dom.rightClick`, `dom.type`, `dom.press`, `dom.scroll`, `dom.locate` |
 | Element | `el.click`, `el.rightClick`, `el.type`, `el.press`, `el.hover`, `el.waitAppear`, `el.waitDisappear`, `el.waitEnabled`, `el.waitText`, `el.waitCount`, `el.waitNew`, `el.text`, `el.attr`, `el.count`, `el.clickMenu` |
 | Selectors | `sel.list`, `sel.add`, `sel.remove`, `sel.test` |
 | Workflows | `workflow.list`, `workflow.run` |
 | Google Flow | `flow.newProject`, `flow.submitPrompt`, `flow.approveCredits`, `flow.waitComplete`, `flow.downloadAll`, `flow.status` |
+
+`page.eval` runs a JavaScript expression in the page's main world through CDP `Runtime.evaluate` (top frame, `awaitPromise`, `returnByValue`). Unlike the content-script `dom.*` actions, it can reach into same-origin iframes such as rich-text editors. The result comes back as `{ value }`; a thrown error returns `EVAL_FAILED`.
+
+```sh
+node run_workflow.js call page.eval '{"expression":"document.title"}' --tab <TAB>
+node run_workflow.js call page.eval '{"expression":"(async()=>{ /* ... */ return 1 })()","timeoutMs":25000}' --tab <TAB>
+```
+
+For long scripts, build the payload with `JSON.stringify` in a small Node helper rather than escaping quotes by hand in the shell.
 
 ## Element API
 
