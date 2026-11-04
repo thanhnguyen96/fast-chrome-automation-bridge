@@ -19,7 +19,10 @@ node run_workflow.js sel test --url gemini.google.com
 node run_workflow.js el click @flow.submit --tab <TAB>
 node run_workflow.js el waitAppear @flow.approve '{"timeout":60000}' --tab <TAB>
 node run_workflow.js screenshot shot.jpg --tab <TAB>   # CDP, does not switch tabs
+node run_workflow.js call page.eval '{"expression":"document.title"}' --tab <TAB>   # run JS in the page
 ```
+
+- Stay on the bridge. Do not switch to Claude in Chrome when the bridge has no ready-made command: `page.eval` runs any JS in the page main world (CDP `Runtime.evaluate`, async allowed, returns `{value}`), including same-origin iframes that `dom.*` cannot reach.
 
 - Prefer `--tab <id>` over `--url`: several tabs can share a URL. Each tab is independent, so different tabs can run in parallel.
 - Selectors per domain live in `selectors/<domain>.json`. Add with `sel add '{"name":{...}}' --url <domain> --tab <TAB>`: it saves through the bridge server and tests at once, no extension reload needed. A hand edit of the JSON file was not picked up in testing (`UNKNOWN_SELECTOR`) until the same entry was added with `sel add`.
@@ -34,6 +37,8 @@ node run_workflow.js screenshot shot.jpg --tab <TAB>   # CDP, does not switch ta
 - Click only returns `clicked:true` for whatever is at that point. With `|| true` or optional clicks, count the element first (`el count`) so a miss does not pass silently.
 - Angular Material toggles: the checked state (`mat-button-toggle-checked`) is on the `mat-button-toggle` wrapper, not on its inner `button`. Read it with `read '<locator>' className`.
 - Side panels can cover other controls; close them before clicking what is underneath.
+- `page.eval` with a long script: write the JS to a file and build the payload with `JSON.stringify` in a Node helper. Hand-escaped quotes and `\n` in shell strings break with `SyntaxError: Invalid or unexpected token`.
+- ProseMirror editors (Evernote, etc.): select the target block range inside the editor iframe, `execCommand('delete')`, then dispatch a `paste` `ClipboardEvent` with `text/html` in a `DataTransfer`. Pasting over a live selection can carry the first block's marks (e.g. bold) into all pasted text, so delete first. Use the note's own markup (`<th>` header rows, plain `<li>`) so the result matches the other sections. Reload the tab and re-read to confirm it saved.
 
 ## 2. Using Claude in Chrome directly
 
