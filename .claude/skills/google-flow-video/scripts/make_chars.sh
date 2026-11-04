@@ -7,7 +7,7 @@ T=$1; F=$2
 DIR=$(dirname "$F")
 N=$(node -e 'console.log(require(require("path").resolve(process.argv[1])).length)' "$F")
 URL=$(node run_workflow.js call tabs.list '{}' --raw | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const t=JSON.parse(d).data.find(x=>x.id==process.argv[1]);process.stdout.write(t?t.url:"")})' "$T")
-case "$URL" in *flow.google.com/project/*) ;; *) echo "!! tab $T is not on a Flow project: $URL"; exit 1 ;; esac
+case "$URL" in *flow.google.com/project/*|*flow.google.com/u/*/project/*) ;; *) echo "!! tab $T is not on a Flow project: $URL"; exit 1 ;; esac
 
 # Tab 0 is the given tab; open one more tab on the same project for each other character.
 TABS=$T
