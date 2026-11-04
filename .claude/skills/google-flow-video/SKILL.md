@@ -42,9 +42,46 @@ Keep script files in the scratchpad, not in the repo.
   4. **Camera**: angle, shot size, movement (wide shot, close-up, low angle, slowly moves closer...).
   5. **Sound**: music, sound effects.
   6. **Dialogue** in the target language.
-  7. End with `No text on screen.`
+  7. End with `Only the people described above appear in this video. No other text on screen, no subtitles, no captions.` (the first sentence stops Omni adding extra passers-by who look like other cast members).
+- **On-screen text the story needs** (a shop sign, a letter, a name board): Omni writes Vietnamese well enough, small accent slips are acceptable to the user. Give the exact text in quotes, `spelled correctly with all accents`, and keep `No other text on screen`. Short text (1-5 words, capitals) comes out best.
 - **Never** put in a prompt: the story/film title, `Scene X of 10`, names of famous studios or era styles (`1950s Disney-style`...). Omni prints titles onto the video, and style names trigger the copyright filter.
 - Do not ask Flow's agent to write the story or create characters; it does that badly. Given ready-written prompts it does well, including many scenes in one message (section 4).
+
+### Consistency between scenes (build prompts from shared blocks)
+
+Each clip is generated alone, so anything worded differently between scenes drifts (house color, sign shape, clothes, light). Generate the prompts with a small script in the scratchpad (`build.js`) that joins **fixed text blocks**, so every scene repeats the same words byte for byte:
+
+```js
+const HEAD = '10-second 3D animated video, 16:9. Stylized 3D animation with soft rounded shapes, warm natural colors and soft daylight, same look in every shot. Keep the attached characters exactly as they look in their reference images.';
+const SET  = 'Location: <the recurring place: building, walls, roof, door colors, props in fixed positions, ground>';
+const HERO = 'the slim fish seller with short black hair parted on the left, a thin black mustache, a faded indigo-blue collarless shirt, a brown canvas apron and a white towel over his shoulder';
+const END  = 'Only the people described above appear in this video. No other text on screen, no subtitles, no captions.';
+const s = (...p) => p.join(' ');
+const scenes = [ s(HEAD, SET, 'Time: early morning, pale golden light.', `Characters: ${HERO} hangs ...`, 'Camera: ...', 'Sound: ...', 'Dialogue in Vietnamese, the fish seller says: "..."', END), ... ];
+// write batch_a.json / batch_b.json / scenes.json (for single redos) from the same array
+```
+
+- One block per recurring **place** and per **character** (the look words must match the character's `desc`). Only `Time`, action, camera, sound, dialogue change per scene.
+- Give each scene a `Time:` that follows the story (`the next morning`, `a few days later, late afternoon`) so the light changes on purpose, not by accident.
+- Write `scenes.json` from the same array, so a single-scene redo uses the identical text.
+- Put each character's look in words **and** attach the character: the words keep extra figures from being invented, the reference keeps the face.
+- Spoken lines: copy the source's own sentences when it has dialogue (folk tales usually do); they keep the story faithful and land the joke.
+- Plan batches by cast: group scenes so each batch needs ≤ 3 characters (e.g. scenes 1-5 with seller + old man + woman, scenes 6-10 with seller + young man + neighbor).
+
+### Changing state across scenes (a sign edited, an object broken, a dish eaten)
+
+Omni does not track what changed in the previous clip, and it **cannot animate a change to text** inside a 10-second clip. Seen with a sign losing words one by one ("Ở ĐÂY CÓ BÁN CÁ TƯƠI" down to "CÁ"):
+- "wipe the word off with a cloth": erased the wrong words or left them.
+- "at the start ... / at the end ...": ignored; the end frame still showed the start text.
+- "paint over ONLY the word X ... in the final shot the sign shows Y": the brush moved but the text stayed the start text, or came out half-erased ("ĐÂY CÓ BÁ...").
+
+What to do (tested, 3 of 3 clips kept the right text all through): **show the result, not the change.** Each clip has one fixed text from the first frame to the last; the action is "he has just repainted it" (steps down from the stool holding a brush and a pot of paint, looks up, nods). The audience sees the change as a cut between scenes.
+  ```
+  Sign state: the change is already done before the video starts. From the first frame to the last frame the signboard shows exactly this Vietnamese text and nothing else, spelled correctly with all accents: "Ở ĐÂY CÓ BÁN CÁ". A fresh patch of wet white paint on the board shows where the removed word(s) used to be; the remaining letters are sharp, evenly spaced and fully readable. The signboard text never changes during the video.
+  ```
+- The same goes for any change of state (a broken vase, a cut tree, an eaten meal): put "before" in one clip and "after" in the next, never both in one.
+- The next scene states the new state again from scratch (`The signboard shows exactly this Vietnamese text: "..."`). Never rely on "the same sign as before".
+- Change-scenes fail most: check their **last frame** (section 5) before moving on.
 
 ### Omni filters (seen for real)
 
@@ -146,9 +183,13 @@ Per scene: wait until the agent is idle, attach characters via the chat "+" butt
   - The monitor must **end by itself**. Do not use `tail -f`: it stays armed until timeout after the batch finished. Use a loop that emits only state changes and exits on a terminal line:
     ```sh
     seen=0; while true; do
-      n=$(wc -l < run.log); [ "$n" -gt "$seen" ] && sed -n "$((seen+1)),${n}p" run.log | grep -E "^== (sent|approved|done)|^!!|costing"; seen=$n
-      grep -qE "^== done|^!!" run.log && break; sleep 5; done
+      n=$(wc -l < run.log); [ "$n" -gt "$seen" ] && sed -n "$((seen+1)),${n}p" run.log | grep -E "^== (sent|approved|done)|^!!|costing|tín dụng"; seen=$n
+      grep -qE "^== done|^!!" run.log && break
+      /usr/bin/ps -ef | grep -q "[r]un_batch.sh" || { grep -q "^== done" run.log || echo "!! script exited"; break; }
+      sleep 5; done
     ```
+  - To also catch a crash, check the script is still alive inside the loop. Git Bash on Windows has **no `pgrep`** (a `pgrep ... || break` check fires at once and ends the monitor with a false "exited"); use `/usr/bin/ps -ef | grep -q "[r]un_batch.sh" || break`.
+  - The Vietnamese plan line reads `... 5 video này với chi phí là 75 tín dụng`; grep `costing|tín dụng` to catch both languages.
   - Emit only what you would act on (sent, plan cost, approved, done, any `!!`). Do not emit the per-poll `tiles=` lines: each one becomes a notification.
   - Cover failure: any `!!` line or a crash must end the monitor too, not only `== done`.
   - A `== done` line is a claim, not proof. Before the next batch, check the plan line (`costing N credits`, N videos) matched the scene count and that the tile count rose by the number of scenes.
@@ -163,6 +204,12 @@ Per scene: wait until the agent is idle, attach characters via the chat "+" butt
 - Delete extra/poor versions (e.g. one with on-screen text): right-click the tile, "Chuyển vào thùng rác" (Move to trash). Hover to read the tile title first so you do not delete the wrong one.
 - Map tiles to scenes by hovering each tile and reading its title (newest tile is first in the grid).
 - Screenshot to check for on-screen text, off-model characters, wrong scene content.
+- **Check every clip properly, not from the grid.** Grid thumbnails hide the middle and end of a clip. Download the zip (section 6), unzip into its own folder, and make one strip per clip (4 frames, every 3 s), plus the last frame of any scene where something changes:
+  ```sh
+  for f in raw/*.mp4; do ffmpeg -loglevel error -y -i "$f" -vf "fps=1/3,scale=480:-1,tile=4x1" -frames:v 1 "frames/$(basename "$f" .mp4).jpg"; done
+  ffmpeg -loglevel error -y -sseof -0.5 -i raw/<clip>.mp4 -frames:v 1 frames/<clip>_last.jpg
+  ```
+  Read each strip and check against the prompt: same set (walls, doors, props), each character on model, story state right (text on a sign, object present), no extra people, no captions. Rewrite only the failing scenes in `build.js`, rebuild, and redo them with `run_scenes.sh` (same text for the scenes that passed). Then delete the old versions of the redone scenes and download again.
 
 ## 6. Download once
 
