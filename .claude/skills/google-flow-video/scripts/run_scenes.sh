@@ -26,7 +26,7 @@ for I in "$@"; do
   k=0
   while [ $k -lt "$NCH" ]; do
     NAME=$(scene 'process.stdout.write(s.chars[+process.argv[4]])' "$k")
-    run el click '{"css":"button","aria":["Thêm thành phần vào ô nhập câu lệnh","Add to prompt"]}' --tab "$T" >/dev/null
+    run el click '{"css":"button","aria":["Thêm thành phần vào ô nhập câu lệnh","Add to prompt","Add ingredients to the prompt box"]}' --tab "$T" >/dev/null
     run el waitAppear '{"css":"button[role=option].asset-item"}' '{"timeout":10000}' --tab "$T" >/dev/null
     run call el.click "$(node -e 'process.stdout.write(JSON.stringify({ref:{css:"button[role=option].asset-item",text:process.argv[1]},target:{tabId:+process.argv[2]}}))' "$NAME" "$T")" >/dev/null \
       || { echo "!! character not found: $NAME"; exit 1; }
@@ -37,7 +37,7 @@ for I in "$@"; do
   done
   run call el.type "$(scene 'process.stdout.write(JSON.stringify({ref:"@flow.prompt",value:s.prompt,target:{tabId:+process.argv[3]}}))')" >/dev/null
   BEFORE=$(count "$APPROVE")
-  run el click @flow.submit --tab "$T" >/dev/null
+  run el click '{"css":"button","aria":["Bắt đầu tạo","Start generation","Create"],"nth":-1}' --tab "$T" >/dev/null
   i=0; NOW=$BEFORE
   while [ "$NOW" -le "$BEFORE" ] && [ $i -lt 36 ]; do sleep 5; NOW=$(count "$APPROVE"); i=$((i+1)); done
   if [ "$NOW" -le "$BEFORE" ]; then
