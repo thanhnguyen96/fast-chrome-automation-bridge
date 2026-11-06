@@ -187,6 +187,8 @@ Mọi lệnh `el.*` nhận một `ref`, có thể là:
 - tên trong từ điển: `"@flow.submit"`
 - object ghi đè: `{ "ref": "@flow.tile", "nth": -1, "within": "@flow.grid" }`
 
+Mặc định locator chỉ khớp phần tử đang hiển thị. Thêm `"includeHidden": true` (alias của `"visible": false`) để chạm tới phần tử bị ẩn bằng CSS, ví dụ `<input>` thật nằm sau checkbox tự vẽ: `{ "css": "input[value=api]", "includeHidden": true }`. Đọc `checked` bằng `read`, hoặc đếm `:checked` bằng `el count`.
+
 | Lệnh | Hành vi |
 | --- | --- |
 | `el.count` | Đếm phần tử khớp ngay lúc gọi |

@@ -196,6 +196,8 @@ Every `el.*` command takes a `ref`, which can be:
 - a dictionary name: `"@flow.submit"`
 - an override object: `{ "ref": "@flow.tile", "nth": -1, "within": "@flow.grid" }`
 
+Locators only match visible elements by default. Add `"includeHidden": true` (alias of `"visible": false`) to reach visually hidden elements, such as the real `<input>` behind a styled checkbox: `{ "css": "input[value=api]", "includeHidden": true }`. Read `checked` on it with `read`, or count `:checked` matches with `el count`.
+
 | Command | Behaviour |
 | --- | --- |
 | `el.count` | Count matches right now |
