@@ -458,7 +458,7 @@
         sel.removeAllRanges();
         sel.addRange(range);
       }
-      const inserted = document.execCommand('insertText', false, text);
+      const inserted = document.execCommand(opts && opts.html ? 'insertHTML' : 'insertText', false, text);
       if (!inserted) {
         el.innerText = clear ? text : (el.innerText || '') + text;
         el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
@@ -889,7 +889,7 @@
       return rightClick(payload.locator);
     },
     'dom.type'(payload) {
-      return type(payload.locator, payload.value, { clear: payload.clear !== false, submit: !!payload.submit });
+      return type(payload.locator, payload.value, { clear: payload.clear !== false, submit: !!payload.submit, html: !!payload.html });
     },
     'dom.press'(payload) {
       return press(payload.locator, payload.key);

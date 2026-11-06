@@ -187,6 +187,12 @@ node run_workflow.js call page.eval '{"expression":"(async()=>{ /* ... */ return
 
 For long scripts, build the payload with `JSON.stringify` in a small Node helper rather than escaping quotes by hand in the shell.
 
+`dom.type` on a contenteditable takes `"html": true` to insert the value as HTML (`execCommand('insertHTML')`) instead of plain text. It runs in the content script, so it still works on pages where `page.eval` fails because another extension injected an iframe (Gmail compose, for example). With the default `clear`, it replaces the whole editor content, signature included.
+
+```sh
+node run_workflow.js call dom.type '{"locator":{"css":"div[contenteditable=true][role=textbox]"},"value":"<p>Hi,</p><ul><li>item</li></ul>","html":true,"target":{"tabId":<TAB>}}'
+```
+
 ## Element API
 
 Every `el.*` command takes a `ref`, which can be:

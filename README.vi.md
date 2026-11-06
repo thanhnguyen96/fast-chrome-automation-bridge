@@ -178,6 +178,12 @@ Locator dạng CSS, object JSON, hoặc tiền tố `text=` / `aria=` / `role=`.
 | Workflow | `workflow.list`, `workflow.run` |
 | Google Flow | `flow.newProject`, `flow.submitPrompt`, `flow.approveCredits`, `flow.waitComplete`, `flow.downloadAll`, `flow.status` |
 
+`dom.type` trên contenteditable nhận `"html": true` để chèn giá trị dạng HTML (`execCommand('insertHTML')`) thay vì text thường. Lệnh chạy trong content script nên vẫn dùng được trên trang mà `page.eval` lỗi do extension khác chèn iframe (ví dụ Gmail compose). Với `clear` mặc định, nó thay toàn bộ nội dung editor, kể cả signature.
+
+```sh
+node run_workflow.js call dom.type '{"locator":{"css":"div[contenteditable=true][role=textbox]"},"value":"<p>Hi,</p><ul><li>item</li></ul>","html":true,"target":{"tabId":<TAB>}}'
+```
+
 ## Element API
 
 Mọi lệnh `el.*` nhận một `ref`, có thể là:
