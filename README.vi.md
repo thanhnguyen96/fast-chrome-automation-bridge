@@ -178,6 +178,12 @@ Locator dạng CSS, object JSON, hoặc tiền tố `text=` / `aria=` / `role=`.
 | Workflow | `workflow.list`, `workflow.run` |
 | Google Flow | `flow.newProject`, `flow.submitPrompt`, `flow.approveCredits`, `flow.waitComplete`, `flow.downloadAll`, `flow.status` |
 
+`dom.type` trên contenteditable nhận `"html": true` để chèn giá trị dạng HTML (`execCommand('insertHTML')`) thay vì text thường. Lệnh chạy trong content script nên vẫn dùng được trên trang mà `page.eval` lỗi do extension khác chèn iframe (ví dụ Gmail compose). Với `clear` mặc định, nó thay toàn bộ nội dung editor, kể cả signature.
+
+```sh
+node run_workflow.js call dom.type '{"locator":{"css":"div[contenteditable=true][role=textbox]"},"value":"<p>Hi,</p><ul><li>item</li></ul>","html":true,"target":{"tabId":<TAB>}}'
+```
+
 ## Element API
 
 Mọi lệnh `el.*` nhận một `ref`, có thể là:
@@ -186,6 +192,8 @@ Mọi lệnh `el.*` nhận một `ref`, có thể là:
 - một mảng fallback, locator đầu tiên khớp được dùng
 - tên trong từ điển: `"@flow.submit"`
 - object ghi đè: `{ "ref": "@flow.tile", "nth": -1, "within": "@flow.grid" }`
+
+Mặc định locator chỉ khớp phần tử đang hiển thị. Thêm `"includeHidden": true` (alias của `"visible": false`) để chạm tới phần tử bị ẩn bằng CSS, ví dụ `<input>` thật nằm sau checkbox tự vẽ: `{ "css": "input[value=api]", "includeHidden": true }`. Đọc `checked` bằng `read`, hoặc đếm `:checked` bằng `el count`.
 
 | Lệnh | Hành vi |
 | --- | --- |

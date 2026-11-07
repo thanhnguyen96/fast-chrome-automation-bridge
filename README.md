@@ -187,6 +187,12 @@ node run_workflow.js call page.eval '{"expression":"(async()=>{ /* ... */ return
 
 For long scripts, build the payload with `JSON.stringify` in a small Node helper rather than escaping quotes by hand in the shell.
 
+`dom.type` on a contenteditable takes `"html": true` to insert the value as HTML (`execCommand('insertHTML')`) instead of plain text. It runs in the content script, so it still works on pages where `page.eval` fails because another extension injected an iframe (Gmail compose, for example). With the default `clear`, it replaces the whole editor content, signature included.
+
+```sh
+node run_workflow.js call dom.type '{"locator":{"css":"div[contenteditable=true][role=textbox]"},"value":"<p>Hi,</p><ul><li>item</li></ul>","html":true,"target":{"tabId":<TAB>}}'
+```
+
 ## Element API
 
 Every `el.*` command takes a `ref`, which can be:
@@ -195,6 +201,8 @@ Every `el.*` command takes a `ref`, which can be:
 - a fallback array, where the first locator that matches is used
 - a dictionary name: `"@flow.submit"`
 - an override object: `{ "ref": "@flow.tile", "nth": -1, "within": "@flow.grid" }`
+
+Locators only match visible elements by default. Add `"includeHidden": true` (alias of `"visible": false`) to reach visually hidden elements, such as the real `<input>` behind a styled checkbox: `{ "css": "input[value=api]", "includeHidden": true }`. Read `checked` on it with `read`, or count `:checked` matches with `el count`.
 
 | Command | Behaviour |
 | --- | --- |

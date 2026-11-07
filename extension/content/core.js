@@ -125,7 +125,8 @@
     if (loc.textExact != null && !matchExact(el.innerText || el.textContent, loc.textExact)) return false;
     if (loc.aria != null && !matchPattern(el.getAttribute('aria-label'), loc.aria)) return false;
     if (loc.placeholder != null && !matchPattern(el.getAttribute('placeholder'), loc.placeholder)) return false;
-    if (loc.visible !== false && !isVisible(el)) return false;
+    // includeHidden: true is an alias of visible: false (match visually hidden inputs, e.g. styled checkboxes).
+    if (loc.visible !== false && loc.includeHidden !== true && !isVisible(el)) return false;
     return true;
   }
 
@@ -192,7 +193,7 @@
   function withOverrides(base, overrides) {
     const out = Object.assign({}, base);
     if (!overrides) return out;
-    for (const key of ['nth', 'within', 'visible', 'text', 'textExact', 'aria', 'placeholder', 'role', 'css', 'xpath']) {
+    for (const key of ['nth', 'within', 'visible', 'includeHidden', 'text', 'textExact', 'aria', 'placeholder', 'role', 'css', 'xpath']) {
       if (overrides[key] !== undefined) out[key] = overrides[key];
     }
     return out;
@@ -457,7 +458,7 @@
         sel.removeAllRanges();
         sel.addRange(range);
       }
-      const inserted = document.execCommand('insertText', false, text);
+      const inserted = document.execCommand(opts && opts.html ? 'insertHTML' : 'insertText', false, text);
       if (!inserted) {
         el.innerText = clear ? text : (el.innerText || '') + text;
         el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
@@ -888,7 +889,7 @@
       return rightClick(payload.locator);
     },
     'dom.type'(payload) {
-      return type(payload.locator, payload.value, { clear: payload.clear !== false, submit: !!payload.submit });
+      return type(payload.locator, payload.value, { clear: payload.clear !== false, submit: !!payload.submit, html: !!payload.html });
     },
     'dom.press'(payload) {
       return press(payload.locator, payload.key);

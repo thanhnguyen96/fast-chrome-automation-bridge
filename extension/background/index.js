@@ -128,6 +128,16 @@ register('agent.window', async () => {
   return { windowId, focusedWindowId, tabs: tabs.map(tabInfo) };
 });
 
+// Resize the agent window without focusing it (a tiny window leaves pages unusable).
+register('agent.resize', async (payload) => {
+  const windowId = await agentWindowId();
+  if (windowId == null) throw new BridgeError('No agent window', 'NO_WINDOW');
+  const width = Number(payload.width) || 1600;
+  const height = Number(payload.height) || 1000;
+  const win = await chrome.windows.update(windowId, { state: 'normal', width, height });
+  return { windowId, width: win.width, height: win.height };
+});
+
 register('agent.release', async (payload) => {
   const tab = await resolveTab(payload.target || {});
   await detachDebugger(tab.id);
