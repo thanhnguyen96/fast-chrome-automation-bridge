@@ -277,6 +277,13 @@ function onTextMessage(text) {
 }
 
 function attachSocket(socket) {
+  // Two Chrome profiles with the extension would replace each other every second.
+  // BRIDGE_KEEP_FIRST=1 keeps the live connection and turns newcomers away instead.
+  if (process.env.BRIDGE_KEEP_FIRST && extensionSocket && !extensionSocket.destroyed) {
+    try { socket.write(createFrame(8, closePayload(1013, 'busy'))); } catch (_) {}
+    socket.destroy();
+    return;
+  }
   const previous = extensionSocket;
   extensionSocket = socket;
   extensionVersion = null;
@@ -290,6 +297,18 @@ function attachSocket(socket) {
   const fragParts = [];
 
   log('extension connected');
+
+  // BRIDGE_WANT_TAB=<text>: drop a profile whose tabs do not contain <text> (e.g. flow.google.com/project).
+  if (process.env.BRIDGE_WANT_TAB) {
+    sendCommand(++requestId, 'tabs.list', {}, 5000).then((tabs) => {
+      if (extensionSocket !== socket) return;
+      if (!JSON.stringify(tabs || []).includes(process.env.BRIDGE_WANT_TAB)) {
+        log('profile without wanted tab, dropped');
+        try { socket.write(createFrame(8, closePayload(1013, 'unwanted'))); } catch (_) {}
+        socket.destroy();
+      } else log('wanted profile attached');
+    }).catch(() => {});
+  }
 
   function closeSocket(code, reason) {
     try { socket.write(createFrame(8, closePayload(code, reason))); } catch (_) {}
