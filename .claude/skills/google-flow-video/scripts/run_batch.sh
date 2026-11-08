@@ -27,6 +27,9 @@ if [ "$(count '{"textExact":["Cài đặt tác nhân","Agent settings"]}')" -gt 
   sleep 1
 fi
 run press Escape --tab "$T" >/dev/null 2>&1 || true
+# A failed earlier run can leave characters attached; attached ones vanish from the picker.
+run el click '{"css":"button","aria":["Xoá câu lệnh","Clear prompt"]}' '{"timeout":1500}' --tab "$T" >/dev/null 2>&1 || true
+sleep 1
 
 k=0
 while [ $k -lt "$NCH" ]; do
@@ -35,10 +38,15 @@ while [ $k -lt "$NCH" ]; do
     || { echo "!! no + button in chat (panel open?)"; exit 1; }
   run el waitAppear '{"css":"button[role=option].asset-item"}' '{"timeout":10000}' --tab "$T" >/dev/null
   # The picker lists only the newest ~14 assets (clips push characters out), so filter with its search box first.
-  run call el.type "$(node -e 'process.stdout.write(JSON.stringify({ref:{css:"input",aria:["Search assets","Tìm kiếm tài sản"]},value:process.argv[1],target:{tabId:+process.argv[2]}}))' "$NAME" "$T")" >/dev/null 2>&1 || true
-  sleep 2
-  run call el.click "$(node -e 'process.stdout.write(JSON.stringify({ref:{css:"button[role=option].asset-item",text:process.argv[1]},target:{tabId:+process.argv[2]}}))' "$NAME" "$T")" >/dev/null \
-    || { echo "!! character not found: $NAME"; exit 1; }
+  # Match the name as the whole first line: plain text would let "Vova" hit "MeVova".
+  PICK=$(node -e 'process.stdout.write(JSON.stringify({ref:{css:"button[role=option].asset-item",text:{regex:"^"+process.argv[1]+"( |$)"}},target:{tabId:+process.argv[2]}}))' "$NAME" "$T")
+  try=0; ok=0
+  while [ $try -lt 3 ] && [ $ok = 0 ]; do
+    run call el.type "$(node -e 'process.stdout.write(JSON.stringify({ref:{css:"input",aria:["Search assets","Tìm kiếm tài sản","Tìm kiếm thành phần","Search ingredients"]},value:process.argv[1],target:{tabId:+process.argv[2]}}))' "$NAME" "$T")" >/dev/null 2>&1 || true
+    sleep 2
+    run call el.click "$PICK" >/dev/null 2>&1 && ok=1 || { try=$((try+1)); sleep 2; }
+  done
+  [ $ok = 1 ] || { echo "!! character not found: $NAME"; exit 1; }
   run el click '{"css":"button","textExact":["Thêm vào câu lệnh","Add to prompt"]}' '{"timeout":2000}' --tab "$T" >/dev/null 2>&1 || true
   sleep 1
   k=$((k+1))
@@ -46,7 +54,7 @@ done
 
 # Scene labels tell the agent where each scene starts; the header forbids putting them on screen.
 MSG=$(batch '
-let m="Create "+b.scenes.length+" separate 10-second videos with Omni, one video per scene below, in this order. "
+let m="Create "+b.scenes.length+" separate videos, Omni 1.1 Flash, "+(process.env.ASPECT||"16:9")+", 720p, 10 seconds each, 15 credits per video ("+(15*b.scenes.length)+" credits total), one video per scene below, in this order. "
  +"Use each scene prompt exactly as written, do not rewrite or merge scenes. "
  +"The scene labels are only for you: never put scene numbers, labels or titles into the videos.\n\n";
 b.scenes.forEach((s,i)=>{m+="[Scene "+(i+1)+"]\n"+s+"\n\n"});
@@ -68,7 +76,15 @@ if [ "$NOW" -le "$BEFORE" ]; then
   echo "!! no approve chip, read the chat (el text body) to see what the agent asked"; exit 1
 fi
 # Show the agent's plan (cost, number of videos) before approving.
-node run_workflow.js el text body --tab "$T" --raw | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const t=JSON.parse(d).data.text;const k=Math.max(t.lastIndexOf("Phê duyệt"),t.lastIndexOf("Approve"));console.log(t.slice(Math.max(0,k-400),k).trim())})'
+PLAN=$(node run_workflow.js el text body --tab "$T" --raw | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const t=JSON.parse(d).data.text;const k=Math.max(t.lastIndexOf("Phê duyệt"),t.lastIndexOf("Approve"));console.log(t.slice(Math.max(0,k-400),k).trim())})')
+echo "$PLAN"
+# Guard: wrong model or cost above MAX_PER_SCENE (default 15) per scene -> reject, never approve.
+MAXC=$(( NSC * ${MAX_PER_SCENE:-15} ))
+COST=$(printf '%s' "$PLAN" | grep -oE '[0-9]+ (credits|tín dụng)' | tail -1 | grep -oE '^[0-9]+')
+if printf '%s' "$PLAN" | grep -q 'Omni 1\.2' || [ -z "$COST" ] || [ "$COST" -ne "$MAXC" ]; then
+  run el click '{"textExact":["Từ chối","Reject"],"nth":-1}' --tab "$T" >/dev/null
+  echo "!! plan rejected: cost '${COST:-?}' > $MAXC or wrong model (check @flow.chatSettings = Omni 1.1 Flash)"; exit 1
+fi
 run el click '{"textExact":["Phê duyệt","Approve"],"nth":-1}' --tab "$T" >/dev/null
 echo "== approved $NSC scenes"
 
